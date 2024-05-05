@@ -10,16 +10,17 @@ from gymnasium import spaces
 
 
 class TicTacToeEnv(gym.Env):
-    def __init__(self, board_size=3):
+    def __init__(self, board_size=3, player=1):
         self.board_size = board_size
         self.action_space = spaces.Discrete(self.board_size * self.board_size)
-        self.observation_space = spaces.Discrete(self.board_size * self.board_size)
+        self.observation_space = spaces.Box(low=0, high=2, shape=(self.board_size, self.board_size), dtype=int)
         self.players = [1, 2]
-        self.small = -1
-        self.large = self.board_size ** 2 + 1
-        self.done = False
+        self.player = player
         self.reset()
     
+    def _get_obs(self):
+        ...
+
     # observation -> board, actions made by each player
     def reset(self):
         self.state: np.ndarray = np.zeros(
@@ -34,39 +35,44 @@ class TicTacToeEnv(gym.Env):
 
         Args:
           Tuple(int, int):
-            action (int): integer between 0-8, each representing a field on the board
+            action (int): integer between 0 - board_size ** 2, each representing a field on the board
             player (int): 1 or 2, representing the player currently playing
 
         Returns:
           self.state (np.array): state of the current board position, 0 means empty, 1 or 2 are are marked as X and O respectively
           reward (int): reward of the currrent step
-          done (boolean): true, if the game is finished
+          terminated (boolean): true, if the game is finished
+          truncated (boolean): true, if the game is truncated
           (dict): empty dict for future game related information
         """
-        action, player = user_action
+        action, cur_player = user_action
 
         if not self.action_space.contains(action):
             raise ValueError(f"action '{action}' is not in action_space")
 
-        if not player in self.players:
-            raise ValueError(f"player '{player}' is not an allowed player")
+        if not cur_player in self.players:
+            raise ValueError(f"player '{cur_player}' is not an allowed player")
 
         row, col = self.decode_action(action)
 
         if self.state[row, col] == 0:
-            self.state[row, col] = player
+            self.state[row, col] = cur_player
         else:
-            return self.state, -10, True, False, self.info
+            return self.state, -20, True, False, self.info
 
-        terminated = self._is_winner(player)
-
+        terminated = self._is_winner(cur_player)
+        reward = 1
         if terminated:
-            reward = 1
-        elif self._is_winner(3 - player):
-            reward = -1
+            if cur_player == self.player:
+                reward = 10
+            else:
+                reward = -10
+        elif self.check_draw():
+            reward = 0
+            terminated = True
         
 
-        self.info["players"][player]["actions"].append(action)
+        self.info["players"][cur_player]["actions"].append(action)
         return self.state, reward, terminated, False, self.info
     
     def _is_winner(self, player: int) -> bool:
@@ -92,8 +98,8 @@ class TicTacToeEnv(gym.Env):
         if all(self.state.diagonal() == player) or all(np.fliplr(self.state).diagonal() == player):
             return True
         
-    def check_game_status(self):
-        
+    def check_draw(self):
+        return all(self.state.flatten() != 0)
 
 
     def decode_action(self, action: int) -> Tuple[int, int]:
@@ -112,37 +118,6 @@ class TicTacToeEnv(gym.Env):
         row = action // self.board_size
         assert 0 <= col < self.board_size
         return [row, col]
-
-    def render(self, mode="human") -> None:
-        """render the board
-
-        The following charachters are used to represent the fields,
-            '-' no stone
-            'O' for player 0
-            'X' for player 1
-
-        example:
-            ╒═══╤═══╤═══╕
-            │ O │ - │ - │
-            ├───┼───┼───┤
-            │ - │ X │ - │
-            ├───┼───┼───┤
-            │ - │ - │ - │
-            ╘═══╧═══╧═══╛
-        """
-        # board = np.zeros((3, 3), dtype=str)
-        # for ii in range(3):
-        #     for jj in range(3):
-        #         if self.state[ii, jj] == 0:
-        #             board[ii, jj] = "-"
-        #         elif self.state[ii, jj] == 1:
-        #             board[ii, jj] = "X"
-        #         elif self.state[ii, jj] == 2:
-        #             board[ii, jj] = "O"
-
-        # if mode == "human":
-        #     board = tabulate(board, tablefmt="fancy_grid")
-        # return board
 
 
 if __name__ == "__main__":
