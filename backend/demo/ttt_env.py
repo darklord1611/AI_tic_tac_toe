@@ -13,7 +13,7 @@ class TicTacToeEnv(gym.Env):
     def __init__(self, board_size=3, player=1):
         self.board_size = board_size
         self.action_space = spaces.Discrete(self.board_size * self.board_size)
-        self.observation_space = spaces.Box(low=0, high=2, shape=(self.board_size, self.board_size), dtype=int)
+        self.observation_space = spaces.Box(low=0, high=2, shape=(self.board_size ** 2,), dtype=int)
         self.players = [1, 2]
         self.player = player
         self.reset()
@@ -51,10 +51,9 @@ class TicTacToeEnv(gym.Env):
         """
         action, cur_player = user_action
 
-        valid_actions = self._get_valid_actions()
-
-        if not action in valid_actions:
-            raise ValueError(f"action '{action}' is not a valid action")
+        # valid_actions = self._get_valid_actions()
+        # if action not in valid_actions:
+        #     raise ValueError(f"action '{action}' is not a valid action")
         if not self.action_space.contains(action):
             raise ValueError(f"action '{action}' is not in action_space")
 
@@ -64,7 +63,10 @@ class TicTacToeEnv(gym.Env):
         row, col = self.decode_action(action)
 
 
-        self.state[row, col] = cur_player
+        if self.state[row, col] != 0:
+            self.state[row, col] = cur_player
+        else:
+            return np.array(self.state.reshape(self.board_size ** 2,), dtype=int), -10, True, False, self.info
         reward = 0
         
         terminated = self._is_winner(cur_player)
@@ -79,7 +81,7 @@ class TicTacToeEnv(gym.Env):
         
 
         self.info["players"][cur_player]["actions"].append(action)
-        return self.state, reward, terminated, False, self.info
+        return np.array(self.state.reshape(self.board_size ** 2,), dtype=int), reward, terminated, False, self.info
     
     def _is_winner(self, player: int) -> bool:
         """check if there is a winner

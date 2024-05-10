@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+from random_agent import random_action
 
 class ReplayBuffer:
     """A simple numpy replay buffer."""
@@ -202,7 +202,10 @@ class DQNAgent:
         cur_player = 1
 
         for frame_idx in range(1, num_frames + 1):
-            action = self.select_action(state)
+            if cur_player == 1:
+                action = self.select_action(state)
+            else:
+                action = random_action(state)
             next_state, reward, done = self.step((action, cur_player))
             cur_player = 3 - cur_player
             state = next_state
@@ -298,7 +301,7 @@ class DQNAgent:
         epsilons: List[float],
     ):
         """Plot the training progresses."""
-        clear_output(True)
+        # clear_output(True)
         plt.figure(figsize=(20, 5))
         plt.subplot(131)
         plt.title('frame %s. score: %s' % (frame_idx, np.mean(scores[-10:])))
