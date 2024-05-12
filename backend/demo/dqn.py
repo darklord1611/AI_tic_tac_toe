@@ -56,6 +56,8 @@ class Network(nn.Module):
     def __init__(self, in_dim: int, out_dim: int):
         """Initialization."""
         super(Network, self).__init__()
+        self.in_dim = in_dim
+        self.out_dim = out_dim
 
         self.layers = nn.Sequential(
             nn.Linear(in_dim, 128), 
@@ -69,6 +71,7 @@ class Network(nn.Module):
         """Forward method implementation."""
         return self.layers(x)
     
+
 
 class DQNAgent:
     """DQN Agent interacting with environment.
@@ -101,6 +104,7 @@ class DQNAgent:
         max_epsilon: float = 1.0,
         min_epsilon: float = 0.1,
         gamma: float = 0.99,
+        load_path: str = None
     ):
         """Initialization.
         
@@ -117,7 +121,6 @@ class DQNAgent:
         """
         obs_dim = env.observation_space.shape[0]
         action_dim = env.action_space.n
-        
         self.env = env
         self.memory = ReplayBuffer(obs_dim, memory_size, batch_size)
         self.batch_size = batch_size
@@ -137,6 +140,10 @@ class DQNAgent:
 
         # networks: dqn, dqn_target
         self.dqn = Network(obs_dim, action_dim).to(self.device)
+        if load_path and os.path.isfile(load_path):
+            if self.dqn.in_dim == obs_dim and self.dqn.out_dim == action_dim:
+                self.dqn.load_state_dict(torch.load(load_path))
+
         self.dqn_target = Network(obs_dim, action_dim).to(self.device)
         self.dqn_target.load_state_dict(self.dqn.state_dict())
         self.dqn_target.eval()
@@ -146,24 +153,29 @@ class DQNAgent:
 
         # transition to store in memory
         self.transition = list()
+        self.agent_player = 1
         
         # mode: train / test
         self.is_test = False
 
-    def select_action(self, state: np.ndarray) -> np.ndarray:
+        # evaluation
+        self.records = {"wins": 0, "draws": 0, "loses": 0}
+
+    def select_action(self, state: np.ndarray, cur_player: int) -> np.ndarray:
         """Select an action from the input state."""
         # epsilon greedy policy
-        if self.epsilon > np.random.random():
-            selected_action = self.env.action_space.sample()
+        if cur_player == self.agent_player:
+            if self.epsilon > np.random.random():
+                selected_action = random_action(state)
+            else:
+                selected_action = self.dqn(
+                    torch.FloatTensor(state).to(self.device)
+                ).argmax()
+                selected_action = selected_action.detach().cpu().numpy()
         else:
-            selected_action = self.dqn(
-                torch.FloatTensor(state).to(self.device)
-            ).argmax()
-            selected_action = selected_action.detach().cpu().numpy()
-        
+            selected_action = random_action(state)
         if not self.is_test:
             self.transition = [state, selected_action]
-        
         return selected_action
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, np.float64, bool]:
@@ -189,7 +201,7 @@ class DQNAgent:
 
         return loss.item()
         
-    def train(self, num_frames: int, plotting_interval: int = 200):
+    def train(self, num_episodes: int, plotting_interval: int = 20):
         """Train the agent."""
         self.is_test = False
         
@@ -200,12 +212,9 @@ class DQNAgent:
         scores = []
         score = 0
         cur_player = 1
-
-        for frame_idx in range(1, num_frames + 1):
-            if cur_player == 1:
-                action = self.select_action(state)
-            else:
-                action = random_action(state)
+        self.plotting = True
+        while num_episodes > 0:
+            action = self.select_action(state, cur_player)
             next_state, reward, done = self.step((action, cur_player))
             cur_player = 3 - cur_player
             state = next_state
@@ -215,6 +224,13 @@ class DQNAgent:
             if done:
                 state, _ = self.env.reset(seed=self.seed)
                 scores.append(score)
+                if score == 1:
+                    self.records["wins"] += 1
+                elif score == 0:
+                    self.records["draws"] += 1
+                else:
+                    self.records["loses"] += 1
+                num_episodes -= 1
                 score = 0
 
             # if training is ready
@@ -236,10 +252,14 @@ class DQNAgent:
                     self._target_hard_update()
 
             # plotting
-            if frame_idx % plotting_interval == 0:
-                self._plot(frame_idx, scores, losses, epsilons)
+            # if num_episodes % plotting_interval == 0 and self.plotting:
+            #     self._plot(num_episodes, scores, losses, epsilons)
+            #     self.plotting = False
+            # else:
+            #     self.plotting = True
                 
         self.env.close()
+        print(self.records)
                 
     def test(self, video_folder: str) -> None:
         """Test the agent."""
@@ -304,7 +324,7 @@ class DQNAgent:
         # clear_output(True)
         plt.figure(figsize=(20, 5))
         plt.subplot(131)
-        plt.title('frame %s. score: %s' % (frame_idx, np.mean(scores[-10:])))
+        plt.title('Episodes %s. score: %s' % (frame_idx, np.mean(scores[-10:])))
         plt.plot(scores)
         plt.subplot(132)
         plt.title('loss')
@@ -313,3 +333,7 @@ class DQNAgent:
         plt.title('epsilons')
         plt.plot(epsilons)
         plt.show()
+    
+    def save(self, save_path: str):
+        """Save model."""
+        torch.save(self.dqn.state_dict(), save_path)

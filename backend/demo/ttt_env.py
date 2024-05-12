@@ -31,6 +31,7 @@ class TicTacToeEnv(gym.Env):
             (self.board_size, self.board_size), dtype=int
         )
         self.info = {"players": {1: {"actions": []}, 2: {"actions": []}}}
+        self.valid_actions = self.state.flatten()
         return self.state.flatten(), self.info
 
     def step(self, user_action):
@@ -63,10 +64,11 @@ class TicTacToeEnv(gym.Env):
         row, col = self.decode_action(action)
 
 
-        if self.state[row, col] != 0:
+        if self.state[row, col] == 0:
             self.state[row, col] = cur_player
+            self.valid_actions[row * self.board_size + col] = -1
         else:
-            return np.array(self.state.reshape(self.board_size ** 2,), dtype=int), -10, True, False, self.info
+            return np.array(self.state.reshape(self.board_size ** 2,), dtype=int), -1, True, False, self.info
         reward = 0
         
         terminated = self._is_winner(cur_player)
