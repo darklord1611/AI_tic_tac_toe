@@ -4,8 +4,8 @@ from typing import Tuple
 import numpy as np
 import pygame
 
-import gymnasium as gym
-from gymnasium import spaces
+import gym
+from gym import spaces
 
 
 
@@ -13,7 +13,7 @@ class TicTacToeEnv(gym.Env):
     def __init__(self, board_size=3, player=1):
         self.board_size = board_size
         self.action_space = spaces.Discrete(self.board_size * self.board_size)
-        self.observation_space = spaces.Box(low=0, high=2, shape=(self.board_size, self.board_size), dtype=int)
+        self.observation_space = spaces.Box(low=0, high=2, shape=(self.board_size ** 2,), dtype=int)
         self.players = [1, 2]
         self.player = player
         self.reset()
@@ -21,15 +21,19 @@ class TicTacToeEnv(gym.Env):
     def _get_obs(self):
         ...
 
+    def _get_valid_actions(self):
+        temp = self.state.flatten()
+        return [i for i in range(self.board_size ** 2) if temp[i] == 0]
+
     # observation -> board, actions made by each player
-    def reset(self):
+    def reset(self, seed=None):
         self.state: np.ndarray = np.zeros(
             (self.board_size, self.board_size), dtype=int
         )
         self.info = {"players": {1: {"actions": []}, 2: {"actions": []}}}
         return self.state.flatten(), self.info
 
-    def step(self, user_action: np.ndarray) -> np.ndarray[np.ndarray, int, bool, bool, dict]:
+    def step(self, user_action):
         """
         step function of the tictactoeEnv
 
@@ -47,6 +51,9 @@ class TicTacToeEnv(gym.Env):
         """
         action, cur_player = user_action
 
+        # valid_actions = self._get_valid_actions()
+        # if action not in valid_actions:
+        #     raise ValueError(f"action '{action}' is not a valid action")
         if not self.action_space.contains(action):
             raise ValueError(f"action '{action}' is not in action_space")
 
@@ -55,25 +62,26 @@ class TicTacToeEnv(gym.Env):
 
         row, col = self.decode_action(action)
 
-        if self.state[row, col] == 0:
+
+        if self.state[row, col] != 0:
             self.state[row, col] = cur_player
         else:
-            return self.state, -20, True, False, self.info
-
+            return np.array(self.state.reshape(self.board_size ** 2,), dtype=int), -10, True, False, self.info
+        reward = 0
+        
         terminated = self._is_winner(cur_player)
-        reward = 1
         if terminated:
             if cur_player == self.player:
-                reward = 10
+                reward = 1
             else:
-                reward = -10
+                reward = -1
         elif self.check_draw():
             reward = 0
             terminated = True
         
 
         self.info["players"][cur_player]["actions"].append(action)
-        return self.state, reward, terminated, False, self.info
+        return np.array(self.state.reshape(self.board_size ** 2,), dtype=int), reward, terminated, False, self.info
     
     def _is_winner(self, player: int) -> bool:
         """check if there is a winner
