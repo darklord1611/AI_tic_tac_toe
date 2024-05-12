@@ -1,5 +1,5 @@
 //TODO: Assign link of API here:
-const api = 'http://4.145.107.27:80'
+const api = 'http://127.0.0.1:1724'
 
 let game = {}
 let roomId = undefined;
