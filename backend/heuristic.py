@@ -9,26 +9,42 @@ def random_action(state):
 
 
 attack_points = [0, 3, 24, 192, 1536, 12288, 98304]
-defense_points = [0, 1, 9, 81, 729, 6561, 59049]
+# defense_points = [0, 1, 9, 81, 729, 6561, 59049]
+defense_points = [0, 1, 11, 400, 1331, 6561, 59049]
 
-def evaluate(state):
-    max_point = 0
+
+def _is_first_move(state):
+    for row in state:
+        for col in row:
+            if col != " ":
+                return False
+    return True
+def evaluate(state, cur_player):
+    if _is_first_move(state):
+        return (len(state[0]) // 2, len(state[0]) // 2)
+    cur_player = 1 if cur_player == "x" else 2
+    max_point = float("-inf")
     n = len(state)
-    move = [-1, -1]
+    move = (-1, -1)
     for i in range(n):
         for j in range(n):
-            if state[i][j] == 0:
-                attack_p = calc_row_AP(state, i, j, 1) + calc_col_AP(state, i, j, 1) + calc_main_diagonal_AP(state, i, j, 1) + calc_sub_diagonal_AP(state, i, j, 1)
-                defense_p = calc_row_DP(state, i, j, 1) + calc_col_DP(state, i, j, 1) + calc_main_diagonal_DP(state, i, j, 1) + calc_sub_diagonal_DP(state, i, j, 1)
+            if state[i][j] == " ":
+                attack_p = calc_row_AP(state, i, j, cur_player) + calc_col_AP(state, i, j, cur_player) + calc_main_diagonal_AP(state, i, j, cur_player) + calc_sub_diagonal_AP(state, i, j, cur_player)
+
+                defense_p = calc_row_DP(state, i, j, cur_player) + calc_col_DP(state, i, j, cur_player) + calc_main_diagonal_DP(state, i, j, cur_player) + calc_sub_diagonal_DP(state, i, j, cur_player)
+
                 point = max(attack_p, defense_p)
-                max_point = max(max_point, point)
-                move = [i, j]
+                if max_point < point:
+                    print(f"attack: {attack_p}, defense: {defense_p}")
+                    max_point = point
+                    move = (i, j)
 
     return move                 
     
 
 def calc_row_AP(state, row, col, cur_player = 1):
     n = len(state)
+    player, opponent = ("x", "o") if cur_player == 1 else ("o", "x")
     player_marks = 0
     opponent_marks = 0
     total_points = 0
@@ -36,9 +52,9 @@ def calc_row_AP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row + i >= n:
             break
-        if state[row + i][col] == cur_player:
+        if state[row + i][col] == player:
             player_marks += 1
-        elif state[row + i][col] == 3 - cur_player:
+        elif state[row + i][col] == opponent:
             opponent_marks += 1
             break
         else:
@@ -47,19 +63,20 @@ def calc_row_AP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row - i < 0:
             break
-        if state[row - i][col] == cur_player:
+        if state[row - i][col] == player:
             player_marks += 1
-        elif state[row - i][col] == 3 - cur_player:
+        elif state[row - i][col] == opponent:
             opponent_marks += 1
             break
         else:
             break
     
-    total_points = attack_points[player_marks] - defense_points[opponent_marks + 1]
+    total_points = attack_points[player_marks] - defense_points[min(opponent_marks + 1, len(defense_points) - 1)]
     return total_points
 
 def calc_col_AP(state, row, col, cur_player = 1):
     n = len(state)
+    player, opponent = ("x", "o") if cur_player == 1 else ("o", "x")
     player_marks = 0
     opponent_marks = 0
     total_points = 0
@@ -67,9 +84,9 @@ def calc_col_AP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if col + i >= n:
             break
-        if state[row][col + i] == cur_player:
+        if state[row][col + i] == player:
             player_marks += 1
-        elif state[row][col + i] == 3 - cur_player:
+        elif state[row][col + i] == opponent:
             opponent_marks += 1
             break
         else:
@@ -78,20 +95,21 @@ def calc_col_AP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row < 0:
             break
-        if state[row][col - i] == cur_player:
+        if state[row][col - i] == player:
             player_marks += 1
-        elif state[row][col - i] == 3 - cur_player:
+        elif state[row][col - i] == opponent:
             opponent_marks += 1
             break
         else:
             break
     
-    total_points = attack_points[player_marks] - defense_points[opponent_marks + 1]
+    total_points = attack_points[player_marks] - defense_points[min(opponent_marks + 1, len(defense_points) - 1)]
     
     return total_points
 
 def calc_main_diagonal_AP(state, row, col, cur_player = 1):
     n = len(state)
+    player, opponent = ("x", "o") if cur_player == 1 else ("o", "x")
     player_marks = 0
     opponent_marks = 0
     total_points = 0
@@ -99,9 +117,9 @@ def calc_main_diagonal_AP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row + i >= n or col + i >= n:
             break
-        if state[row + i][col + i] == cur_player:
+        if state[row + i][col + i] == player:
             player_marks += 1
-        elif state[row + i][col + i] == 3 - cur_player:
+        elif state[row + i][col + i] == opponent:
             opponent_marks += 1
             break
         else:
@@ -110,20 +128,21 @@ def calc_main_diagonal_AP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row - i < 0 or col - i < 0:
             break
-        if state[row - i][col - i] == cur_player:
+        if state[row - i][col - i] == player:
             player_marks += 1
-        elif state[row - i][col - i] == 3 - cur_player:
+        elif state[row - i][col - i] == opponent:
             opponent_marks += 1
             break
         else:
             break
     
-    total_points = attack_points[player_marks] - defense_points[opponent_marks + 1]
+    total_points = attack_points[player_marks] - defense_points[min(opponent_marks + 1, len(defense_points) - 1)]
     
     return total_points
 
 def calc_sub_diagonal_AP(state, row, col, cur_player = 1):
     n = len(state)
+    player, opponent = ("x", "o") if cur_player == 1 else ("o", "x")
     player_marks = 0
     opponent_marks = 0
     total_points = 0
@@ -132,9 +151,9 @@ def calc_sub_diagonal_AP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row - i < 0 or col + i >= n:
             break
-        if state[row - i][col + i] == cur_player:
+        if state[row - i][col + i] == player:
             player_marks += 1
-        elif state[row - i][col + i] == 3 - cur_player:
+        elif state[row - i][col + i] == opponent:
             opponent_marks += 1
             break
         else:
@@ -144,15 +163,15 @@ def calc_sub_diagonal_AP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row + i >= n or col - i < 0:
             break
-        if state[row + i][col - i] == cur_player:
+        if state[row + i][col - i] == player:
             player_marks += 1
-        elif state[row + i][col - i] == 3 - cur_player:
+        elif state[row + i][col - i] == opponent:
             opponent_marks += 1
             break
         else:
             break
     
-    total_points = attack_points[player_marks] - defense_points[opponent_marks + 1]
+    total_points = attack_points[player_marks] - defense_points[min(opponent_marks + 1, len(defense_points) - 1)]
     
     return total_points
 
@@ -160,6 +179,7 @@ def calc_sub_diagonal_AP(state, row, col, cur_player = 1):
 
 def calc_row_DP(state, row, col, cur_player = 1):
     n = len(state)
+    player, opponent = ("x", "o") if cur_player == 1 else ("o", "x")
     player_marks = 0
     opponent_marks = 0
     total_points = 0
@@ -167,9 +187,9 @@ def calc_row_DP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row + i >= n:
             break
-        if state[row + i][col] == cur_player:
+        if state[row + i][col] == player:
             break
-        elif state[row + i][col] == 3 - cur_player:
+        elif state[row + i][col] == opponent:
             opponent_marks += 1
         else:
             break
@@ -177,10 +197,10 @@ def calc_row_DP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row - i < 0:
             break
-        if state[row - i][col] == cur_player:
+        if state[row - i][col] == player:
             player_marks += 1
             break
-        elif state[row - i][col] == 3 - cur_player:
+        elif state[row - i][col] == opponent:
             opponent_marks += 1
         else:
             break
@@ -191,6 +211,7 @@ def calc_row_DP(state, row, col, cur_player = 1):
 
 def calc_col_DP(state, row, col, cur_player = 1):
     n = len(state)
+    player, opponent = ("x", "o") if cur_player == 1 else ("o", "x")
     player_marks = 0
     opponent_marks = 0
     total_points = 0
@@ -198,22 +219,21 @@ def calc_col_DP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if col + i >= n:
             break
-        if state[row][col + i] == cur_player:
+        if state[row][col + i] == player:
             player_marks += 1
             break
-        elif state[row][col + i] == 3 - cur_player:
+        elif state[row][col + i] == opponent:
             opponent_marks += 1
-            break
         else:
             break
     # backward check
     for i in range(1, 6):
         if row < 0:
             break
-        if state[row][col - i] == cur_player:
+        if state[row][col - i] == player:
             player_marks += 1
             break
-        elif state[row][col - i] == 3 - cur_player:
+        elif state[row][col - i] == opponent:
             opponent_marks += 1
         else:
             break
@@ -225,6 +245,7 @@ def calc_col_DP(state, row, col, cur_player = 1):
 
 def calc_main_diagonal_DP(state, row, col, cur_player = 1):
     n = len(state)
+    player, opponent = ("x", "o") if cur_player == 1 else ("o", "x")
     player_marks = 0
     opponent_marks = 0
     total_points = 0
@@ -232,10 +253,10 @@ def calc_main_diagonal_DP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row + i >= n or col + i >= n:
             break
-        if state[row + i][col + i] == cur_player:
+        if state[row + i][col + i] == player:
             player_marks += 1
             break
-        elif state[row + i][col + i] == 3 - cur_player:
+        elif state[row + i][col + i] == opponent:
             opponent_marks += 1
         else:
             break
@@ -243,10 +264,10 @@ def calc_main_diagonal_DP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row - i < 0 or col - i < 0:
             break
-        if state[row - i][col - i] == cur_player:
+        if state[row - i][col - i] == player:
             player_marks += 1
             break
-        elif state[row - i][col - i] == 3 - cur_player:
+        elif state[row - i][col - i] == opponent:
             opponent_marks += 1
         else:
             break
@@ -257,6 +278,7 @@ def calc_main_diagonal_DP(state, row, col, cur_player = 1):
 
 def calc_sub_diagonal_DP(state, row, col, cur_player = 1):
     n = len(state)
+    player, opponent = ("x", "o") if cur_player == 1 else ("o", "x")
     player_marks = 0
     opponent_marks = 0
     total_points = 0
@@ -265,10 +287,10 @@ def calc_sub_diagonal_DP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row - i < 0 or col + i >= n:
             break
-        if state[row - i][col + i] == cur_player:
+        if state[row - i][col + i] == player:
             player_marks += 1
             break
-        elif state[row - i][col + i] == 3 - cur_player:
+        elif state[row - i][col + i] == opponent:
             opponent_marks += 1
         else:
             break
@@ -277,10 +299,10 @@ def calc_sub_diagonal_DP(state, row, col, cur_player = 1):
     for i in range(1, 6):
         if row + i >= n or col - i < 0:
             break
-        if state[row + i][col - i] == cur_player:
+        if state[row + i][col - i] == player:
             player_marks += 1
             break
-        elif state[row + i][col - i] == 3 - cur_player:
+        elif state[row + i][col - i] == opponent:
             opponent_marks += 1
         else:
             break

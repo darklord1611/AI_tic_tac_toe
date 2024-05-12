@@ -1,4 +1,7 @@
 
+from heuristic import evaluate
+
+
 def is_winner(board, player):
     size = len(board)
     for i in range(size):
@@ -46,7 +49,7 @@ def get_possible_moves(board):
     moves.sort(reverse=True, key=lambda x: x[0]) #soort theo score
     return [(i, j) for _, i, j in moves]
 
-#Hàm evaluate_board để đánh giá trạng thái hiện tại của bàn cờ dựa trên lợi thế củangười chơi so với đối thủ
+#Hàm evaluate_board để đánh giá trạng thái hiện tại của bàn cờ dựa trên lợi thế của người chơi so với đối thủ
 def evaluate_board(board, player):
     score = 0
     size = len(board)
@@ -131,8 +134,13 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
         return best_move, minEval
 
 
-def get_move(board, player, max_depth=5):
-    best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
+def get_move(board, player, max_depth=5, policy="minimax"):
+    match(policy):
+        case "minimax":
+            best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
+        case "heuristic":
+            best_move = evaluate(board, player)
+
     return best_move
 
 

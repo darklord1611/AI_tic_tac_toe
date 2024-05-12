@@ -47,7 +47,7 @@ def log(*args):
 PORT = 5000
 team1_role = "x"
 team2_role = "o"
-size = 5
+size = 6
 #################
 
 rooms = {}
@@ -58,7 +58,7 @@ for i in range(size):
     BOARD.append([])
     for j in range(size):
         BOARD[i].append(' ')
-
+print(len(BOARD), len(BOARD[0]))
 
 @app.route('/init', methods=['POST'])
 @cross_origin()

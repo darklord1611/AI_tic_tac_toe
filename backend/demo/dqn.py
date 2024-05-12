@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from random_agent import random_action
+from backend.heuristic import random_action
 
 class ReplayBuffer:
     """A simple numpy replay buffer."""
