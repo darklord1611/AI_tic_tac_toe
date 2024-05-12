@@ -44,7 +44,7 @@ def log(*args):
 
 
 # Global variance
-PORT = 80
+PORT = 5000
 team1_role = "x"
 team2_role = "o"
 size = 5
@@ -70,7 +70,7 @@ def get_data():
     global rooms
     global room_by_teams
     room_id = info["room_id"]
-    is_init = False
+
     if room_id not in rooms:
         match_id = 1
         team1_id = info["team1_id"]
@@ -81,8 +81,8 @@ def get_data():
         room_by_teams[team2_id] = room_id
         board_game = BoardGame(size, BOARD, room_id, match_id, team1_id_full, team2_id_full)
         rooms[room_id] = board_game
-        is_init = True
 
+    is_init = True
     board_game = rooms[room_id]
     return {
         "room_id": board_game.game_info["room_id"],
