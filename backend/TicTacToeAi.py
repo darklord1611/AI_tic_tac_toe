@@ -90,26 +90,30 @@ def evaluate_board(board, player):
     return score
 
 
-def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
+def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player, use_heuristic=False):
     size = len(board)
     opponent = 'o' if player == 'x' else 'x'
     if depth == max_depth:
-        return None, evaluate_board(board, player)
+        if use_heuristic == False:
+            return None, evaluate_board(board, player)
+        return None, evaluate(board, player)
     if is_winner(board, player):
         return None, float('inf')  # Hoặc một giá trị rất lớn phù hợp
     if is_winner(board, opponent):
         return None, float('-inf')  # Hoặc một giá trị rất nhỏ phù hợp
 
     possible_moves = get_possible_moves(board)
+    # ?
     if not possible_moves:  # Không còn nước đi
-        return None, evaluate_board(board, player)
+        # return None, evaluate_board(board, player)
+        return None, evaluate(board, player)
 
     if maximizingPlayer:
         maxEval = float('-inf')
         best_move = None
         for i, j in possible_moves:
             board[i][j] = player
-            _, eval = minimax(board, depth + 1, max_depth, alpha, beta, False, player)
+            _, eval = minimax(board, depth + 1, max_depth, alpha, beta, False, player, use_heuristic)
             board[i][j] = ' '
             if eval > maxEval:
                 maxEval = eval
@@ -123,7 +127,7 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
         best_move = None
         for i, j in possible_moves:
             board[i][j] = opponent
-            _, eval = minimax(board, depth + 1, max_depth, alpha, beta, True, player)
+            _, eval = minimax(board, depth + 1, max_depth, alpha, beta, True, player, use_heuristic)
             board[i][j] = ' '
             if eval < minEval:
                 minEval = eval
@@ -140,7 +144,8 @@ def get_move(board, player, max_depth=5, policy="minimax"):
             best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
         case "heuristic":
             best_move = evaluate(board, player)
-
+        case "combined":
+            best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player, True)
     return best_move
 
 

@@ -19,7 +19,7 @@ def _is_first_move(state):
             if col != " ":
                 return False
     return True
-def evaluate(state, cur_player):
+def evaluate(state, cur_player, get_point=True):
     if _is_first_move(state):
         return (len(state[0]) // 2, len(state[0]) // 2)
     cur_player = 1 if cur_player == "x" else 2
@@ -38,7 +38,8 @@ def evaluate(state, cur_player):
                     print(f"attack: {attack_p}, defense: {defense_p}")
                     max_point = point
                     move = (i, j)
-
+    if get_point == True:
+        return max_point
     return move                 
     
 

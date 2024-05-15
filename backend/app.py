@@ -172,7 +172,7 @@ if __name__ == "__main__":
     team_roles = input("Enter your team role (x/o): ").lower()
     while True:
         policy = input("Enter policy (heuristic/minimax): ").lower()
-        if policy == "heuristic" or policy == "minimax":
+        if policy == "heuristic" or policy == "minimax" or policy == "combined":
             break
         else:
             print("Invalid policy")
