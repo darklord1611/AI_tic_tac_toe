@@ -10,7 +10,7 @@ def random_action(state):
 
 attack_points = [0, 3, 24, 192, 1536, 12288, 98304]
 # defense_points = [0, 1, 9, 81, 729, 6561, 59049]
-defense_points = [0, 1, 11, 400, 1331, 6561, 59049]
+defense_points = [0, 1, 11, 400, 1600, 6561, 59049]
 
 
 def _is_first_move(state):
@@ -19,9 +19,7 @@ def _is_first_move(state):
             if col != " ":
                 return False
     return True
-def evaluate(state, cur_player, get_point=True):
-    if _is_first_move(state):
-        return (len(state[0]) // 2, len(state[0]) // 2)
+def evaluate(state, cur_player, get_point=False, maximizingPlayer=True):
     cur_player = 1 if cur_player == "x" else 2
     max_point = float("-inf")
     n = len(state)
@@ -35,7 +33,6 @@ def evaluate(state, cur_player, get_point=True):
 
                 point = max(attack_p, defense_p)
                 if max_point < point:
-                    print(f"attack: {attack_p}, defense: {defense_p}")
                     max_point = point
                     move = (i, j)
     if get_point == True:
@@ -206,7 +203,7 @@ def calc_row_DP(state, row, col, cur_player = 1):
         else:
             break
     
-    total_points = defense_points[opponent_marks]
+    total_points = defense_points[min(opponent_marks, len(defense_points) - 1)]
     return total_points
 
 
@@ -239,7 +236,7 @@ def calc_col_DP(state, row, col, cur_player = 1):
         else:
             break
     
-    total_points = defense_points[opponent_marks]
+    total_points = defense_points[min(opponent_marks, len(defense_points) - 1)]
     
     return total_points
 
@@ -273,7 +270,7 @@ def calc_main_diagonal_DP(state, row, col, cur_player = 1):
         else:
             break
     
-    total_points = defense_points[opponent_marks]
+    total_points = defense_points[min(opponent_marks, len(defense_points) - 1)]
     
     return total_points
 
@@ -308,6 +305,6 @@ def calc_sub_diagonal_DP(state, row, col, cur_player = 1):
         else:
             break
     
-    total_points = defense_points[opponent_marks]
+    total_points = defense_points[min(opponent_marks, len(defense_points) - 1)]
     
     return total_points

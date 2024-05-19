@@ -171,7 +171,7 @@ if __name__ == "__main__":
     opponent_team_id = input("Enter opponent team id: ")
     team_roles = input("Enter your team role (x/o): ").lower()
     while True:
-        policy = input("Enter policy (heuristic/minimax): ").lower()
+        policy = input("Enter policy (heuristic/minimax/combined): ").lower()
         if policy == "heuristic" or policy == "minimax" or policy == "combined":
             break
         else:
