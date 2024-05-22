@@ -1,6 +1,12 @@
 
+import random
 from heuristic import evaluate, _is_first_move
 import numpy as np
+
+def random_move(board):
+    size = len(board)
+    possible_moves = get_possible_moves(board)
+    return possible_moves[random.randint(0, len(possible_moves) - 1)]
 
 def is_winner(board, player):
     size = len(board)
@@ -53,7 +59,7 @@ def _get_possible_moves(board):
     possible_moves = []
     for i in range(len(board)):
         for j in range(len(board)):
-            if board[i][j] == ' ':
+            if board[i][j] == 0:
                 possible_moves.append((i, j))
     return possible_moves
     
@@ -101,9 +107,11 @@ def evaluate_board(board, player):
 
 def negamax(board, depth, alpha, beta, player):
     size = len(board)
-    opponent = 'o' if player == 'x' else 'x'
+    cur_player = 1 if player == "x" else 2
+    opponent = "o" if player == "x" else "x"
+
     if depth == 0:
-        return None, evaluate(board, player, get_point=True)
+        return None, evaluate(board, cur_player, get_point=True)
     if is_winner(board, player):
         return None, float('inf')  # Hoặc một giá trị rất lớn phù hợp
     if is_winner(board, opponent):
@@ -114,12 +122,13 @@ def negamax(board, depth, alpha, beta, player):
     best_move = None
 
     if not possible_moves:
-        return None, evaluate(board, player, get_point=True)
+        print("no more moves")
+        return None, evaluate(board, cur_player, get_point=True)
     
     for i, j in possible_moves:
-        board[i][j] = player
+        board[i][j] = cur_player
         _, eval = negamax(board, depth - 1, -beta, -alpha, opponent)
-        board[i][j] = ' '
+        board[i][j] = 0
 
         eval = -1 * eval
         if eval > eval_max:
@@ -162,6 +171,8 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
             alpha = max(alpha, eval)
             if beta <= alpha:
                 break
+        if best_move == None:
+            best_move = random_move(board)
         return best_move, maxEval
     else:
         minEval = float('inf')
@@ -176,10 +187,14 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
             beta = min(beta, eval)
             if beta <= alpha:
                 break
+        if best_move == None:
+            best_move = random_move(board)
         return best_move, minEval
 
 
 def get_move(board, player, max_depth=3, policy="negamax"):
+    vtransform = np.vectorize(transform)
+    new_board = np.array(vtransform(board), dtype=int)
     # new_board = np.array(board, dtype=int)
     print(f"Using policy: {policy}")
     if _is_first_move(board):
@@ -188,9 +203,15 @@ def get_move(board, player, max_depth=3, policy="negamax"):
         case "minimax":
             best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
         case "heuristic":
-            best_move = evaluate(board, player, False)
+            best_move = evaluate(new_board, 1 if player == "x" else 2, False)
         case "negamax":
-            best_move, _ = negamax(board, 3, float('-inf'), float('inf'), player)
+            best_move, _ = negamax(new_board, 3, float('-inf'), float('inf'), player)
     return best_move
 
 
+def transform(element):
+    if element == "x":
+        return 1
+    elif element == "o":
+        return 2
+    return 0
