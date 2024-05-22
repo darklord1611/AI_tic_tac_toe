@@ -47,8 +47,9 @@ def log(*args):
 PORT = 5000
 team1_role = "x"
 team2_role = "o"
-size = 6
 #################
+
+size = int(input("Enter the size of the board: "))
 
 rooms = {}
 room_by_teams = {}

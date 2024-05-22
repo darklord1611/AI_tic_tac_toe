@@ -1,6 +1,6 @@
 
 from heuristic import evaluate, _is_first_move
-
+import numpy as np
 
 def is_winner(board, player):
     size = len(board)
@@ -20,15 +20,7 @@ def is_winner(board, player):
 
 #Hàm get_possible_moves được thiết kế để lấy danh sách các nước đi khả dụng,
 # đồng thời đánh giá và sắp xếp các nước đi dựa trên tiềm năng chiến thắng của chúng.
-def get_possible_moves(board, policy="minimax"):
-    if policy == "combined":
-        possible_moves = []
-        for i in range(len(board)):
-            for j in range(len(board)):
-                if board[i][j] == ' ':
-                    possible_moves.append((i, j))
-        return possible_moves
-    
+def get_possible_moves(board):
     size = len(board)
     center = size // 2
     moves = []
@@ -56,6 +48,15 @@ def get_possible_moves(board, policy="minimax"):
                 moves.append((score, i, j))
     moves.sort(reverse=True, key=lambda x: x[0]) #sort theo score
     return [(i, j) for _, i, j in moves]
+
+def _get_possible_moves(board):
+    possible_moves = []
+    for i in range(len(board)):
+        for j in range(len(board)):
+            if board[i][j] == ' ':
+                possible_moves.append((i, j))
+    return possible_moves
+    
 
 #Hàm evaluate_board để đánh giá trạng thái hiện tại của bàn cờ dựa trên lợi thế của người chơi so với đối thủ
 def evaluate_board(board, player):
@@ -98,10 +99,10 @@ def evaluate_board(board, player):
     return score
 
 
-def negamax(board, depth, max_depth, alpha, beta, player):
+def negamax(board, depth, alpha, beta, player):
     size = len(board)
     opponent = 'o' if player == 'x' else 'x'
-    if depth == max_depth:
+    if depth == 0:
         return None, evaluate(board, player, get_point=True)
     if is_winner(board, player):
         return None, float('inf')  # Hoặc một giá trị rất lớn phù hợp
@@ -109,15 +110,16 @@ def negamax(board, depth, max_depth, alpha, beta, player):
         return None, float('-inf')  # Hoặc một giá trị rất nhỏ phù hợp
     
     eval_max = float('-inf')
-    possible_moves = get_possible_moves(board, policy="combined")
+    possible_moves = _get_possible_moves(board)
     best_move = None
+
+    if not possible_moves:
+        return None, evaluate(board, player, get_point=True)
+    
     for i, j in possible_moves:
         board[i][j] = player
-        _, eval = negamax(board, depth + 1, max_depth, -beta, -alpha, opponent)
+        _, eval = negamax(board, depth - 1, -beta, -alpha, opponent)
         board[i][j] = ' '
-
-        if eval == None:
-            return evaluate(board, player, False), None
 
         eval = -1 * eval
         if eval > eval_max:
@@ -177,7 +179,9 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
         return best_move, minEval
 
 
-def get_move(board, player, max_depth=4, policy="minimax"):
+def get_move(board, player, max_depth=3, policy="negamax"):
+    # new_board = np.array(board, dtype=int)
+    print(f"Using policy: {policy}")
     if _is_first_move(board):
         return (len(board) // 2, len(board) // 2)
     match(policy):
@@ -185,8 +189,8 @@ def get_move(board, player, max_depth=4, policy="minimax"):
             best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
         case "heuristic":
             best_move = evaluate(board, player, False)
-        case "combined":
-            best_move, _ = negamax(board, 0, 3, float('-inf'), float('inf'), player)
+        case "negamax":
+            best_move, _ = negamax(board, 3, float('-inf'), float('inf'), player)
     return best_move
 
 

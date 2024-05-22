@@ -1,17 +1,14 @@
 import random
-
-
-def random_action(state):
-    temp = state.flatten()
-    valid_actions = [i for i in range(len(temp)) if temp[i] == 0]
-    return random.choice(valid_actions)
-
-
+# defense_points = [0, 1, 9, 81, 729, 6561, 59049]
 
 attack_points = [0, 3, 24, 192, 1536, 12288, 98304]
-# defense_points = [0, 1, 9, 81, 729, 6561, 59049]
 defense_points = [0, 1, 11, 400, 1600, 6561, 59049]
 
+# ([0, 1, 26, 63, 1264, 3249, 131913], [0, 1, 8, 11, 109, 236, 1953])
+
+# 21 wins against original heuristic
+# attack_points = [0, 1, 26, 63, 1264, 3249, 131913]
+# defense_points = [0, 1, 8, 80, 109, 236, 1953]
 
 def _is_first_move(state):
     for row in state:
@@ -19,6 +16,7 @@ def _is_first_move(state):
             if col != " ":
                 return False
     return True
+
 def evaluate(state, cur_player, get_point=False, maximizingPlayer=True):
     cur_player = 1 if cur_player == "x" else 2
     max_point = float("-inf")
