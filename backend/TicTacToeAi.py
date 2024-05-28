@@ -24,36 +24,6 @@ def is_winner(board, player):
                 return True
     return False
 
-#Hàm get_possible_moves được thiết kế để lấy danh sách các nước đi khả dụng,
-# đồng thời đánh giá và sắp xếp các nước đi dựa trên tiềm năng chiến thắng của chúng.
-def get_possible_moves(board):
-    size = len(board)
-    center = size // 2
-    moves = []
-    for i in range(size):
-        for j in range(size):
-            if board[i][j] == ' ':
-                score = 0
-                directions = [
-                    [(i, j + k) for k in range(-4, 5) if 0 <= j + k < size],
-                    [(i + k, j) for k in range(-4, 5) if 0 <= i + k < size],
-                    [(i + k, j + k) for k in range(-4, 5) if 0 <= i + k < size and 0 <= j + k < size],
-                    [(i + k, j - k) for k in range(-4, 5) if 0 <= i + k < size and 0 <= j - k < size]
-                ]
-                for direction in directions:
-                    line_potential = 0
-                    for x, y in direction:
-                        if board[x][y] == ' ':
-                            line_potential += 1
-                        elif board[x][y] != board[i][j]:
-                            line_potential = 0
-                            break
-                    score += line_potential
-                #Thêm điểm ưu tiên cho các ô gần tâm bàn cờ hơn
-                score += (1 - (abs(center - i) + abs(center - j)) / center) * 2
-                moves.append((score, i, j))
-    moves.sort(reverse=True, key=lambda x: x[0]) #sort theo score
-    return [(i, j) for _, i, j in moves]
 
 def _get_possible_moves(board):
     possible_moves = []
@@ -62,47 +32,127 @@ def _get_possible_moves(board):
             if board[i][j] == 0:
                 possible_moves.append((i, j))
     return possible_moves
-    
 
-#Hàm evaluate_board để đánh giá trạng thái hiện tại của bàn cờ dựa trên lợi thế của người chơi so với đối thủ
-def evaluate_board(board, player):
-    score = 0
+
+#Hàm get_possible_moves được thiết kế để lấy danh sách các nước đi khả dụng,
+# đồng thời đánh giá và sắp xếp các nước đi dựa trên tiềm năng chiến thắng của chúng.
+def get_possible_moves(board):
     size = len(board)
-    opponent = 'o' if player == 'x' else 'x'
-
-    # Directions arrays for sequences check
-    directions = [
-        [(0, 1)],  # Horizontal
-        [(1, 0)],  # Vertical
-        [(1, 1)],  # Diagonal right
-        [(1, -1)]  # Diagonal left
-    ]
+    possible_moves = []
+    move_scores = {}
 
     for i in range(size):
         for j in range(size):
-            if board[i][j] == player:
-                # Check all directions
-                for direction in directions:
-                    count = 0
-                    for k in range(1, 5):  # Check up to 4 cells from the current position
-                        ni, nj = i + direction[0][0] * k, j + direction[0][1] * k
-                        if 0 <= ni < size and 0 <= nj < size and board[ni][nj] == player:
-                            count += 1
-                        else:
-                            break
-                    score += count ** 2  # Square the count to prioritize longer sequences
-            elif board[i][j] == opponent:
-                for direction in directions:
-                    count = 0
-                    for k in range(1, 5):
-                        ni, nj = i + direction[0][0] * k, j + direction[0][1] * k
-                        if 0 <= ni < size and 0 <= nj < size and board[ni][nj] == opponent:
-                            count += 1
-                        else:
-                            break
-                    score -= count ** 2  # Penalize opponent sequences similarly
+            if board[i][j] == ' ':
+                score = 0
+                # Kiểm tra các ô xung quanh để đánh giá tiềm năng
+                for di in range(-1, 2):
+                    for dj in range(-1, 2):
+                        if di == 0 and dj == 0:
+                            continue
+                        ni, nj = i + di, j + dj
+                        if 0 <= ni < size and 0 <= nj < size and board[ni][nj] != ' ':
+                            score += 1
+                            # Đánh giá tiềm năng tạo thành chuỗi
+                            # Điểm bổ sung cho chuỗi có tiềm năng lớn hơn
+                            length, open_ends = check_line_length(board, ni, nj, di, dj, board[ni][nj])
+                            if length >= 4:
+                                score += 100
+                            elif length == 3 and open_ends == 2:
+                                score += 50
+                if score > 0:
+                    possible_moves.append((i, j))
+                    move_scores[(i, j)] = score
+
+    # Sắp xếp các nước đi theo điểm số giảm dần
+    sorted_moves = sorted(possible_moves, key=lambda move: move_scores[move], reverse=True)
+    return sorted_moves
+
+def check_line_length(board, x, y, dx, dy, player):
+    length = 1
+    open_ends = 0
+
+    # Kiểm tra một hướng
+    nx, ny = x + dx, y + dy
+    while 0 <= nx < len(board) and 0 <= ny < len(board) and board[nx][ny] == player:
+        length += 1
+        nx += dx
+        ny += dy
+    if 0 <= nx < len(board) and 0 <= ny < len(board) and board[nx][ny] == ' ':
+        open_ends += 1
+
+    # Kiểm tra hướng ngược lại
+    nx, ny = x - dx, y - dy
+    while 0 <= nx < len(board) and 0 <= ny < len(board) and board[nx][ny] == player:
+        length += 1
+        nx -= dx
+        ny -= dy
+    if 0 <= nx < len(board) and 0 <= ny < len(board) and board[nx][ny] == ' ':
+        open_ends += 1
+
+    return length, open_ends
+
+# Hàm evaluate_board để đánh giá trạng thái hiện tại của bàn cờ dựa trên lợi thế của người chơi so với đối thủ
+def evaluate_board(board, player):
+    score = 0
+    opponent = 'o' if player == 'x' else 'x'
+    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+    n = len(board)
+
+    def count_threats(x, y, dx, dy, player):
+        length = 1
+        open_ends = 0
+
+        # Kiểm tra hướng đi xuôi
+        nx, ny = x + dx, y + dy
+        while 0 <= nx < n and 0 <= ny < n and board[nx][ny] == player:
+            length += 1
+            nx += dx
+            ny += dy
+        if 0 <= nx < n and 0 <= ny < n and board[nx][ny] == ' ':
+            open_ends += 1
+
+        # Kiểm tra hướng đi ngược
+        nx, ny = x - dx, y - dy
+        while 0 <= nx < n and 0 <= ny < n and board[nx][ny] == player:
+            length += 1
+            nx -= dx
+            ny -= dy
+        if 0 <= nx < n and 0 <= ny < n and board[nx][ny] == ' ':
+            open_ends += 1
+
+        # Điểm số dựa trên độ dài và số đầu mở
+        if length >= 5:
+            return float('inf')
+        elif length == 4:
+            if open_ends > 0:
+                return 10000
+            else:
+                return 5000
+        elif length == 3:
+            if open_ends == 2:
+                return 1000
+            elif open_ends == 1:
+                return 500
+        elif length == 2:
+            if open_ends == 2:
+                return 100
+            elif open_ends == 1:
+                return 50
+        return 0
+
+    # Tính điểm cho tất cả các ô
+    for x in range(n):
+        for y in range(n):
+            if board[x][y] == player or board[x][y] == opponent:
+                current_player = board[x][y]
+                for dx, dy in directions:
+                    score += count_threats(x, y, dx, dy, current_player) * (1 if current_player == player else -1)
 
     return score
+
+
+
 
 
 def negamax(board, depth, alpha, beta, player):
