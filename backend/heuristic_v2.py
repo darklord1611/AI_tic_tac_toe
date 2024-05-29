@@ -1,6 +1,6 @@
 def evaluate(board, player, get_point=True):
     max_point = 0
-    directions = [(0, 1), (1, 0), (1, 1), (-1, -1)]
+    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
     n = len(board)
     best_move = None
     def count_threats(x, y, dx, dy, player):

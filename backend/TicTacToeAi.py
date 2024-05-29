@@ -97,7 +97,7 @@ def check_line_length(board, x, y, dx, dy, player):
 def evaluate_board(board, player):
     score = 0
     opponent = 'o' if player == 'x' else 'x'
-    directions = [(0, 1), (1, 0), (1, 1), (-1, -1)]
+    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
     n = len(board)
 
     def count_threats(x, y, dx, dy, player):
