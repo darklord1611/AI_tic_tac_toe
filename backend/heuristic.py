@@ -1,6 +1,7 @@
 import random
 # defense_points = [0, 1, 9, 81, 729, 6561, 59049]
 
+
 attack_points = [0, 3, 24, 192, 1536, 12288, 98304]
 defense_points = [0, 1, 11, 400, 1600, 6561, 59049]
 

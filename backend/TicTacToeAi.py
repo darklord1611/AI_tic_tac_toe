@@ -1,6 +1,7 @@
 
 import random
 from heuristic import evaluate, _is_first_move
+from heuristic_v2 import evaluate as evaluate_v2
 import numpy as np
 
 def random_move(board):
@@ -96,7 +97,7 @@ def check_line_length(board, x, y, dx, dy, player):
 def evaluate_board(board, player):
     score = 0
     opponent = 'o' if player == 'x' else 'x'
-    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+    directions = [(0, 1), (1, 0), (1, 1), (-1, -1)]
     n = len(board)
 
     def count_threats(x, y, dx, dy, player):
@@ -243,8 +244,6 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
 
 
 def get_move(board, player, max_depth=3, policy="negamax"):
-    vtransform = np.vectorize(transform)
-    new_board = np.array(vtransform(board), dtype=int)
     # new_board = np.array(board, dtype=int)
     print(f"Using policy: {policy}")
     if _is_first_move(board):
@@ -253,15 +252,8 @@ def get_move(board, player, max_depth=3, policy="negamax"):
         case "minimax":
             best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
         case "heuristic":
-            best_move = evaluate(new_board, 1 if player == "x" else 2, False)
-        case "negamax":
-            best_move, _ = negamax(new_board, 3, float('-inf'), float('inf'), player)
+            best_move = evaluate_v2(board, True if player == 'x' else False, False)
+        # case "negamax":
+        #     best_move, _ = negamax(board, 3, float('-inf'), float('inf'), player)
     return best_move
 
-
-def transform(element):
-    if element == "x":
-        return 1
-    elif element == "o":
-        return 2
-    return 0

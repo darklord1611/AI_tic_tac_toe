@@ -38,7 +38,7 @@ class GameClient:
         # và cập nhật thông tin trò chơi
         while not stop_thread:
             # Thời gian lắng nghe giữa các lần
-            time.sleep(3)
+            time.sleep(1)
             print(f'Init: {self.init}')
 
             # Nếu chưa kết nối thì gửi yêu cầu kết nối
