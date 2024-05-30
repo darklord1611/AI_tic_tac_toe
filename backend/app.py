@@ -19,7 +19,7 @@ stop_thread = False  # Biến dùng để dừng thread lắng nghe
 # Giao tiếp với trọng tài qua API:
 # nghe trọng tài trả về thông tin hiển thị ở '/', gửi yêu cầu khởi tại qua '/init/' và gửi nước đi qua '/move'
 class GameClient:
-    def __init__(self, server_url, room_id, your_team_id, opponent_team_id,  your_team_roles, policy):
+    def __init__(self, server_url, room_id, your_team_id, opponent_team_id,  your_team_roles, policy="minimax"):
         self.server_url = server_url
         self.team_id = f'{your_team_id}+{your_team_roles}'
         self.your_team_id = your_team_id
@@ -170,13 +170,7 @@ if __name__ == "__main__":
     your_team_id = input("Enter your team id: ")
     opponent_team_id = input("Enter opponent team id: ")
     team_roles = input("Enter your team role (x/o): ").lower()
-    while True:
-        policy = input("Enter policy (heuristic/minimax/negamax): ").lower()
-        if policy == "heuristic" or policy == "minimax" or policy == "negamax":
-            break
-        else:
-            print("Invalid policy")
     # Khởi tạo game client
-    gameClient = GameClient(host, room_id, your_team_id, opponent_team_id, team_roles, policy)
+    gameClient = GameClient(host, room_id, your_team_id, opponent_team_id, team_roles, policy="minimax")
     gameClient.listen()
 
