@@ -1,6 +1,7 @@
 
 import random
-import numpy as np
+
+from heuristic import evaluate_single_step
 
 def random_move(board):
     size = len(board)
@@ -191,16 +192,19 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
 
 
 def _is_first_move(board):
-    print("Calling")
     for i in range(len(board)):
         for j in range(len(board)):
             if board[i][j] != " ":
                 return False
     return True
 
-def get_move(board, player, max_depth=2):
+def get_move(board, player, max_depth=4, policy="minimax"):
     if _is_first_move(board):
         return (len(board) // 2, len(board) // 2)
-    best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
+    match(policy):
+        case "minimax":
+            best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
+        case "heuristic":
+            best_move = evaluate_single_step(board, player)
     return best_move
 

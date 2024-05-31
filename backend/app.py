@@ -19,7 +19,7 @@ stop_thread = False  # Biến dùng để dừng thread lắng nghe
 # Giao tiếp với trọng tài qua API:
 # nghe trọng tài trả về thông tin hiển thị ở '/', gửi yêu cầu khởi tại qua '/init/' và gửi nước đi qua '/move'
 class GameClient:
-    def __init__(self, server_url, room_id, your_team_id, opponent_team_id,  your_team_roles):
+    def __init__(self, server_url, room_id, your_team_id, opponent_team_id,  your_team_roles, policy="minimax"):
         self.server_url = server_url
         self.team_id = f'{your_team_id}+{your_team_roles}'
         self.your_team_id = your_team_id
@@ -31,6 +31,7 @@ class GameClient:
         self.size = None
         self.ai = None
         self.room_id = room_id
+        self.policy = policy
 
     def listen(self):
         # Lắng nghe yêu cầu từ server trọng tài
@@ -73,7 +74,7 @@ class GameClient:
                     self.size = int(data.get("size"))
                     self.board = copy.deepcopy(data.get("board"))
                     # Lấy nước đi từ AI, nước đi là một tuple (i, j)
-                    move = get_move(self.board, self.team_roles)
+                    move = get_move(self.board, self.team_roles, policy=self.policy)
                     print(f"Move from {self.team_roles}: ", move)
                     # Kiểm tra nước đi hợp lệ
                     valid_move = self.check_valid_move(move)
@@ -169,6 +170,7 @@ if __name__ == "__main__":
     your_team_id = input("Enter your team id: ")
     opponent_team_id = input("Enter opponent team id: ")
     team_roles = input("Enter your team role (x/o): ").lower()
+    policy = input("Enter policy (minimax/heuristic): ").lower()
     # Khởi tạo game client
-    gameClient = GameClient(host, room_id, your_team_id, opponent_team_id, team_roles)
+    gameClient = GameClient(host, room_id, your_team_id, opponent_team_id, team_roles, policy="minimax")
     gameClient.listen()
