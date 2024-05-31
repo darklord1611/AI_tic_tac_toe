@@ -1,7 +1,5 @@
 
 import random
-from heuristic import _is_first_move
-from heuristic_v2 import evaluate as evaluate_v2
 import numpy as np
 
 def random_move(board):
@@ -192,15 +190,17 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
         return best_move, minEval
 
 
-def get_move(board, player, max_depth=3, policy="minimax"):
-    # new_board = np.array(board, dtype=int)
-    print(f"Using policy: {policy}")
+def _is_first_move(board):
+    print("Calling")
+    for i in range(len(board)):
+        for j in range(len(board)):
+            if board[i][j] != " ":
+                return False
+    return True
+
+def get_move(board, player, max_depth=2):
     if _is_first_move(board):
         return (len(board) // 2, len(board) // 2)
-    match(policy):
-        case "minimax":
-            best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
-        case "heuristic":
-            best_move = evaluate_v2(board, True if player == 'x' else False, False)
+    best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
     return best_move
 

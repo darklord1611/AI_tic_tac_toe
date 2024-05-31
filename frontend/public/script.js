@@ -1,5 +1,5 @@
 //TODO: Assign link of API here:
-const api = 'http://127.0.0.1:1724'
+const api = 'http://4.145.107.27:80'
 
 let game = {}
 let roomId = undefined;
@@ -75,27 +75,45 @@ function drawBoard() {
     var gameBoard = document.getElementsByClassName("gameboard");
     var gameBoardHTML = "<table cell-spacing = '0'>";
 
+    const num_cells = size + 1;
+    const max_width = 600;
+    const max_height = 400;
+
+    gameBoardHTML += "<tr>";
+    gameBoardHTML += `<td style='width:${max_width / num_cells}px; height:${max_width / num_cells}px; font-size:${max_height / num_cells}px; font-weight: 300;'>`
+                + "</td>";
+    for (var i = 0; i < size; i++) {
+        gameBoardHTML += `<td style='width:${max_width / num_cells}px; height:${max_width / num_cells}px; font-size:${max_height / num_cells}px; font-weight: 300;'>`
+            + i
+            + "</td>";
+    }
+    gameBoardHTML += "</tr>";
+
     for (var i = 0; i < size; i++) {
         gameBoardHTML += "<tr>"
+        gameBoardHTML += `<td style='width:${max_width / num_cells}px; height:${max_width / num_cells}px; font-size:${max_height / num_cells}px; font-weight: 300;'>`
+                + i
+                + "</td>"
         for (var j = 0; j < size; j++) {
+
             if (prevGameBoard != undefined && game.board[i][j] == 'x' && prevGameBoard[i][j] === ' ') {
-                gameBoardHTML += `<td style='width:${600 / size}px; height:${600 / size}px; font-size:${400 / size}px; font-weight: 300; color: rgb(254,96,93); background-color: rgba(238, 238, 238, 0.5); border: 3px solid rgb(254,96,93); border-collapse: collapse;'>`
+                gameBoardHTML += `<td style='width:${max_width / num_cells}px; height:${max_width / num_cells}px; font-size:${max_height / num_cells}px; font-weight: 300; color: rgb(254,96,93); background-color: rgba(238, 238, 238, 0.5); border: 3px solid rgb(254,96,93); border-collapse: collapse;'>`
                     + game.board[i][j]
                     + "</td>"
             }
             else if (prevGameBoard != undefined && game.board[i][j] == 'o' && prevGameBoard[i][j] === ' ') {
-                gameBoardHTML += `<td style='width:${600 / size}px; height:${600 / size}px; font-size:${400 / size}px; font-weight: 300; color: #3DC4F3; background-color: rgba(238, 238, 238, 0.5); border: 3px solid #3DC4F3; border-collapse: collapse;'>`
+                gameBoardHTML += `<td style='width:${max_width / num_cells}px; height:${max_width / num_cells}px; font-size:${max_height / num_cells}px; font-weight: 300; color: #3DC4F3; background-color: rgba(238, 238, 238, 0.5); border: 3px solid #3DC4F3; border-collapse: collapse;'>`
                     + game.board[i][j]
                     + "</td>"
             }
 
             else if (game.board[i][j] == 'x'){
-                gameBoardHTML += `<td style='width:${600 / size}px; height:${600 / size}px; font-size:${400 / size}px; font-weight: 300; color: rgb(254,96,93)'>`
+                gameBoardHTML += `<td style='width:${max_width / num_cells}px; height:${max_width / num_cells}px; font-size:${max_height / num_cells}px; font-weight: 300; color: rgb(254,96,93)'>`
                 + game.board[i][j]
                 + "</td>"
             }
             else {
-                gameBoardHTML += `<td style='width:${600 / size}px; height:${600 / size}px; font-size:${400 / size}px; font-weight: 300; color: #3DC4F3'>`
+                gameBoardHTML += `<td style='width:${max_width / num_cells}px; height:${max_width / num_cells}px; font-size:${max_height / num_cells}px; font-weight: 300; color: #3DC4F3'>`
                 + game.board[i][j]
                 + "</td>"
             }

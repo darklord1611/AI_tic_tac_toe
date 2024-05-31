@@ -1,11 +1,3 @@
 /venv
 /__pycache__
-venv
-demo/__pycache__
-
-**/.DS_Store
-
-.DS_Store
-
-random_search.py
-test_heuristic.py
+```
