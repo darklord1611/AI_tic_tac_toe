@@ -46,10 +46,10 @@ def log(*args):
 
 
 # Global variance
-PORT = 5000
+PORT = 80
 team1_role = "x"
 team2_role = "o"
-size = 20
+size = 15
 #################
 
 rooms: dict[Any, BoardGame] = {}
@@ -100,19 +100,21 @@ MAX_TIME_BY_BOARD_SIZE = {
     40: 1500  # capped at 1500
 }
 
-def calculate_time_for_team(room: BoardGame, teamNumber: int, now: float):
+def calculate_time_for_team(room: BoardGame, teamNumber: int, now: float, useLock=True):
     """
     Calculates time used by a team so far, taking into consideration the time gap between game info fetches.
     teamNumber == 1 means team1, else team2.
     now is the current time: now = realtime().
     """
-    if not room.timeUpdateLock.acquire(False):
-        # Another time manipulation operation for
-        # this room is in progress in another thread.
-        # So let it do its job, we will come back
-        # later. No precision will ever be lost.
-        # print("Time Update Lock not acquired, skipping to the next iteration.")
-        return
+
+    if useLock:
+        if not room.timeUpdateLock.acquire(False):
+            # Another time manipulation operation for
+            # this room is in progress.
+            # So let it do its job, we will come back
+            # later. No precision will ever be lost.
+            # print("Time Update Lock not acquired, skipping to the next iteration.")
+            return
 
     try:
         lastFetchTime = room.lastFetchTime[teamNumber - 1]
@@ -120,6 +122,7 @@ def calculate_time_for_team(room: BoardGame, teamNumber: int, now: float):
         timestamp = room.timestamps[teamNumber - 1]
         oldTimeUsed = timeUsed = room.game_info["time1"] if teamNumber == 1 else room.game_info["time2"]
 
+        delta = 0
         if lastFetchTime < lastBoardUpdateTime:
             # The last fetch was before the last board update.
             # We are encountering a time gap between game info
@@ -127,37 +130,24 @@ def calculate_time_for_team(room: BoardGame, teamNumber: int, now: float):
             # Wait for them a little !
             WAIT_THRESHOLD = lastBoardUpdateTime + 5
             if now < WAIT_THRESHOLD:
-                # time += 0
+                # delta = 0
                 pass
             else:
                 if timestamp < WAIT_THRESHOLD:
-                    timeUsed += now - WAIT_THRESHOLD
+                    delta = now - WAIT_THRESHOLD
                 else:
-                    timeUsed += now - timestamp
+                    delta = now - timestamp
         else:
-            timeUsed += now - max(timestamp, lastFetchTime)
+            delta = now - max(timestamp, lastFetchTime)
         
-        if timeUsed < 0:
-            # If we use time.time(), which has a precision
-            # of 1 second (!), we may encounter negative
-            # time, i.e. when time.time() from this thread
-            # is 1 second behind the time.time() from another
-            # thread.
-            # Now we're using a monotonic clock for that
-            # (the realtime() function from Board.py),
-            # BUT we still need to check for negative time
-            # and be notified of such incidents.
-            print("ERROR: Time is negative !")
-            print("time:", timeUsed)
-            print("old time:", oldTimeUsed)
-            print("actual now: ", realtime())
-            print("now:", now)
-            print("timestamp:", timestamp)
-            print("lastFetchTime:", lastFetchTime)
-            print("lastBoardUpdateTime:", lastBoardUpdateTime)
-            print("WILL NOT UPDATE TIME NOW.")
-            print("========================")
-            timeUsed = oldTimeUsed
+        if delta < 0:
+            print("Time measurement: FATAL ERROR: delta =", delta, "< 0.")
+            # with open("log.txt", "a") as f:
+            #     now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            #     f.write(f"{now} # Time measurement: FATAL ERROR: delta = {delta} < 0.\n")
+            return
+
+        timeUsed += delta;
 
         if teamNumber == 1:
             room.game_info["time1"] = timeUsed
@@ -167,7 +157,8 @@ def calculate_time_for_team(room: BoardGame, teamNumber: int, now: float):
         room.timestamps[teamNumber - 1] = now
     
     finally:
-        room.timeUpdateLock.release()
+        if useLock:
+            room.timeUpdateLock.release()
 
 def update_time(rooms: List[BoardGame]):
     log_time = realtime()
@@ -293,12 +284,9 @@ def fe_render_board():
 @app.route('/move', methods=['POST'])
 @cross_origin()
 def handle_move():
-    now = realtime()
-
-    log("handle_move")
     data = request.data
-
     data = json.loads(data.decode('utf-8'))
+
     global rooms
     room_id = data["room_id"]
     if room_id not in rooms:
@@ -307,61 +295,66 @@ def handle_move():
             "error": "Room not found"
         }
     board_game = rooms[room_id]
-    team1_id_full = board_game.game_info["team1_id"]
-    team2_id_full = board_game.game_info["team2_id"]
 
-    log(f"game info: {board_game.game_info}")
-    if data["turn"] == board_game.game_info["turn"] and data["status"] == None:
-        # Kiểm tra nước đi hợp lệ
-        diffs = BoardGame.diff(board_game.game_info["board"], data["board"])
-        if len(diffs) != 1:
-            return {
-                "code": 1,
-                "error": "Invalid move"
-            }
-        i, j = diffs[0]
-        mark = board_game.game_info["turn"][-1]
-        if board_game.game_info["board"][i][j] != " " or data["board"][i][j] != mark:
-            return {
-                "code": 1,
-                "error": "Invalid move"
-            }
-        
-        # Nước đi đã được kiểm tra hợp lệ
-        board_game.game_info.update(data)
-        if data["turn"] == team1_id_full:
-            # Now it's team 2's turn
-            calculate_time_for_team(board_game, 1, now)
-            board_game.game_info["turn"] = team2_id_full
-        else:
-            # Now it's team 1's turn
-            calculate_time_for_team(board_game, 2, now)
-            board_game.game_info["turn"] = team1_id_full
-        with board_game.timeUpdateLock:
-            board_game.lastBoardUpdateTime = now
-    log("Team 1 time: ", board_game.game_info["time1"])
-    log("Team 2 time: ", board_game.game_info["time2"])
-    if data["status"] == None:
-        log("Checking status...")
-        board_game.check_status(data["board"])
-    # log("After check status: ",board_game.game_info)
+    with board_game.timeUpdateLock:
+        now = realtime()
 
-    # board_game.convert_board(board_game.game_info["board"])
+        log("handle_move")
+        team1_id_full = board_game.game_info["team1_id"]
+        team2_id_full = board_game.game_info["team2_id"]
 
-    return {
-        "code": 0,
-        "error": "",
-        "status": board_game.game_info["status"],
-        "size": board_game.game_info["size"],
-        "turn": board_game.game_info["turn"],
-        "time1": board_game.game_info["time1"],
-        "time2": board_game.game_info["time2"],
-        "score1": board_game.game_info["score1"],
-        "score2": board_game.game_info["score2"],
-        "board": board_game.game_info["board"],
-        "room_id": board_game.game_info["room_id"],
-        "match_id": board_game.game_info["match_id"]
-    }
+        log(f"game info: {board_game.game_info}")
+        if data["turn"] == board_game.game_info["turn"] and data["status"] == None:
+            # Kiểm tra nước đi hợp lệ
+            diffs = BoardGame.diff(board_game.game_info["board"], data["board"])
+            if len(diffs) != 1:
+                return {
+                    "code": 1,
+                    "error": "Invalid move"
+                }
+            i, j = diffs[0]
+            mark = board_game.game_info["turn"][-1]
+            if board_game.game_info["board"][i][j] != " " or data["board"][i][j] != mark:
+                return {
+                    "code": 1,
+                    "error": "Invalid move"
+                }
+            
+            # Nước đi đã được kiểm tra hợp lệ
+            board_game.game_info.update(data)
+            if data["turn"] == team1_id_full:
+                # Now it's team 2's turn
+                calculate_time_for_team(board_game, 1, now, useLock=False)
+                board_game.lastBoardUpdateTime = now
+                board_game.game_info["turn"] = team2_id_full
+            else:
+                # Now it's team 1's turn
+                calculate_time_for_team(board_game, 2, now, useLock=False)
+                board_game.lastBoardUpdateTime = now
+                board_game.game_info["turn"] = team1_id_full
+        log("Team 1 time: ", board_game.game_info["time1"])
+        log("Team 2 time: ", board_game.game_info["time2"])
+        if data["status"] == None:
+            log("Checking status...")
+            board_game.check_status(data["board"])
+        # log("After check status: ",board_game.game_info)
+
+        # board_game.convert_board(board_game.game_info["board"])
+
+        return {
+            "code": 0,
+            "error": "",
+            "status": board_game.game_info["status"],
+            "size": board_game.game_info["size"],
+            "turn": board_game.game_info["turn"],
+            "time1": board_game.game_info["time1"],
+            "time2": board_game.game_info["time2"],
+            "score1": board_game.game_info["score1"],
+            "score2": board_game.game_info["score2"],
+            "board": board_game.game_info["board"],
+            "room_id": board_game.game_info["room_id"],
+            "match_id": board_game.game_info["match_id"]
+        }
 
 
 if __name__ == "__main__":

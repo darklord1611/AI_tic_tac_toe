@@ -191,6 +191,9 @@ def minimax(board, depth, max_depth, alpha, beta, maximizingPlayer, player):
         return best_move, minEval
 
 
+
+
+
 def _is_first_move(board):
     for i in range(len(board)):
         for j in range(len(board)):
@@ -201,10 +204,6 @@ def _is_first_move(board):
 def get_move(board, player, max_depth=4, policy="minimax"):
     if _is_first_move(board):
         return (len(board) // 2, len(board) // 2)
-    match(policy):
-        case "minimax":
-            best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
-        case "heuristic":
-            best_move = evaluate_single_step(board, player)
+    best_move, _ = minimax(board, 0, max_depth, float('-inf'), float('inf'), True if player == 'x' else False, player)
     return best_move
 

@@ -165,12 +165,11 @@ def get_data():
 if __name__ == "__main__":
     # Lấy địa chỉ server trọng tài từ người dùng
     # host = input("Enter server url: ")
-    host = "http://127.0.0.1:5000"
+    host = "http://4.145.107.27:80"
     room_id = input("Enter room id: ")
     your_team_id = input("Enter your team id: ")
     opponent_team_id = input("Enter opponent team id: ")
     team_roles = input("Enter your team role (x/o): ").lower()
-    policy = input("Enter policy (minimax/heuristic): ").lower()
     # Khởi tạo game client
     gameClient = GameClient(host, room_id, your_team_id, opponent_team_id, team_roles, policy="minimax")
     gameClient.listen()
